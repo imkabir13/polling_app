@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getDb } from "@/lib/mongodb";
 
 export async function POST(req: NextRequest) {
   const forwardedFor = req.headers.get("x-forwarded-for");
@@ -14,14 +15,35 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  console.log("Poll submission:", {
-    sessionId,
-    deviceId,
-    ip,
-    gender,
-    age,
-    answer,
-  });
+  try {
+    const db = await getDb();
+    const collection = db.collection("pollResponses");
 
-  return NextResponse.json({ ok: true });
+    await collection.insertOne({
+      sessionId,
+      deviceId: deviceId ?? null,
+      ip,
+      gender,
+      age,
+      answer,
+      createdAt: new Date(),
+    });
+
+    console.log("Poll submission stored:", {
+      sessionId,
+      deviceId,
+      ip,
+      gender,
+      age,
+      answer,
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("Error saving poll response:", err);
+    return NextResponse.json(
+      { error: "Failed to save poll response" },
+      { status: 500 }
+    );
+  }
 }

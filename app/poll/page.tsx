@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ENFORCE_SINGLE_VOTE } from "@/lib/pollConfig";
 import { getOrCreateDeviceId, markDeviceHasVoted } from "@/lib/device";
+import { trackEvent } from "@/lib/analyticsClient";
 
 type Answer = "yes" | "no" | null;
 
@@ -18,6 +19,8 @@ export default function PollPage() {
   const gender = searchParams.get("gender");
   const age = searchParams.get("age");
   const sessionId = searchParams.get("sessionId");
+
+  const [showSuccess, setShowSuccess] = useState(false);
 
   // Get / create device id on mount
   useEffect(() => {
@@ -74,12 +77,25 @@ export default function PollPage() {
         throw new Error("Failed to submit poll");
       }
 
+      // 🔹 Analytics: vote submitted
+      trackEvent("vote_submitted", {
+        deviceId,
+        sessionId,
+        context: {
+          gender,
+          age: Number(age),
+          answer,
+        },
+      });
+
       if (ENFORCE_SINGLE_VOTE) {
         markDeviceHasVoted();
       }
 
-      alert("Thank you! Your vote has been recorded.");
-      router.push("/");
+      setShowSuccess(true);
+      setTimeout(() => {
+        router.push("/");
+      }, 10000);
     } catch (err) {
       console.error(err);
       alert("Something went wrong. Please try again.");
@@ -133,6 +149,22 @@ export default function PollPage() {
             </button>
           </div>
         </div>
+
+        {showSuccess && (
+          <div className="fixed inset-0 bg-[#049354] flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-xl p-6 w-80 text-center">
+              <h2 className="text-xl font-bold mb-3">Thank You!</h2>
+              <p className="text-sm mb-4">Your vote has been recorded.</p>
+
+              <button
+                onClick={() => router.push("/")}
+                className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Submit Button */}
         {secondsLeft <= 5 && secondsLeft > 0 && (

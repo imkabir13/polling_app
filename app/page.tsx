@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import PollResultsPie from "@/components/PollResultsPie";
 import { ENFORCE_SINGLE_VOTE } from "@/lib/pollConfig";
 import { hasDeviceVoted } from "@/lib/device";
+import { trackEvent } from "@/lib/analyticsClient";
+import { DEVICE_ID_KEY, HAS_VOTED_KEY } from "./constants";
 
 type Gender = "male" | "female" | null;
 
 // Mock result data – later this will come from API/DB
-const YES_VOTES = 80000000;
-const NO_VOTES = 9000000;
+// const YES_VOTES = 80000000;
+// const NO_VOTES = 9000000;
 
 export default function Home() {
   const [open, setOpen] = useState(false);
@@ -20,6 +22,9 @@ export default function Home() {
   const [secondsLeft, setSecondsLeft] = useState<number>(0);
   const [hasVoted, setHasVoted] = useState(false);
   const [alreadyVotedMessage, setAlreadyVotedMessage] = useState("");
+  const [yesVotes, setYesVotes] = useState(0);
+  const [noVotes, setNoVotes] = useState(0);
+  const [deviceId, setDeviceId] = useState<string | null>(null);
 
   const router = useRouter();
 
@@ -53,6 +58,12 @@ export default function Home() {
   };
 
   const handleClose = () => {
+    // 🔹 Analytics: modal closed manually
+    trackEvent("modal_closed", {
+      deviceId,
+      context: { gender, age },
+    });
+
     resetForm();
     setOpen(false);
   };
@@ -68,6 +79,13 @@ export default function Home() {
       sessionId,
     });
 
+    // 🔹 Analytics: user started the poll
+    // trackEvent("modal_closed", {
+    //   deviceId,
+    //   sessionId,
+    //   context: { gender, age, action: "start_poll" },
+    // });
+
     resetForm();
     setOpen(false);
     setSecondsLeft(0);
@@ -75,11 +93,57 @@ export default function Home() {
     router.push(`/poll?${params.toString()}`);
   };
 
+  // deviceId and track poll_opened
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let storedDeviceId = localStorage.getItem(DEVICE_ID_KEY);
+    if (!storedDeviceId) {
+      storedDeviceId = crypto.randomUUID();
+      localStorage.setItem(DEVICE_ID_KEY, storedDeviceId);
+    }
+    setDeviceId(storedDeviceId);
+
+    const votedFlag = localStorage.getItem(HAS_VOTED_KEY) === "true";
+    setHasVoted(votedFlag);
+
+    // 🔹 Analytics: home / poll seen
+    trackEvent("poll_opened", {
+      deviceId: storedDeviceId,
+      context: { screen: "home" },
+    });
+  }, []);
+
   // Read hasVoted from localStorage via helper
   useEffect(() => {
     if (!ENFORCE_SINGLE_VOTE) return;
     setHasVoted(hasDeviceVoted());
   }, []);
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const res = await fetch("/api/poll/stats");
+        if (!res.ok) return;
+        const data = await res.json();
+        setYesVotes(data.yesVotes ?? 0);
+        setNoVotes(data.noVotes ?? 0);
+      } catch (err) {
+        console.error("Failed to load poll stats", err);
+      }
+    }
+
+    fetchStats();
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      trackEvent("modal_opened", {
+        deviceId,
+        context: { gender, age, action: "start_poll" },
+      });
+    }
+  }, [open]);
 
   // Start countdown when modal opens
   useEffect(() => {
@@ -91,6 +155,13 @@ export default function Home() {
       setSecondsLeft((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
+
+          // 🔹 Analytics: modal timeout
+          trackEvent("modal_timeout", {
+            deviceId,
+            context: { gender, age },
+          });
+
           resetForm();
           setOpen(false);
           return 0;
@@ -102,6 +173,28 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [open]);
 
+  // When you read / create deviceId, also set state + fire poll_opened
+  useEffect(() => {
+    if (!ENFORCE_SINGLE_VOTE) return;
+    if (typeof window === "undefined") return;
+
+    let storedDeviceId = localStorage.getItem(DEVICE_ID_KEY);
+    if (!storedDeviceId) {
+      storedDeviceId = crypto.randomUUID();
+      localStorage.setItem(DEVICE_ID_KEY, storedDeviceId);
+    }
+    setDeviceId(storedDeviceId);
+
+    const votedFlag = localStorage.getItem(HAS_VOTED_KEY) === "true";
+    setHasVoted(votedFlag);
+
+    // 🔹 Analytics: user saw the home page/poll
+    trackEvent("poll_opened", {
+      deviceId: storedDeviceId,
+      context: { screen: "home" },
+    });
+  }, []);
+
   const handleOpenPoll = () => {
     if (ENFORCE_SINGLE_VOTE && hasVoted) {
       setAlreadyVotedMessage(
@@ -110,6 +203,11 @@ export default function Home() {
       return;
     }
     setAlreadyVotedMessage("");
+    // 🔹 Analytics: modal opened
+    trackEvent("modal_opened", {
+      deviceId,
+      context: { screen: "home" },
+    });
     setOpen(true);
   };
 
@@ -132,7 +230,7 @@ export default function Home() {
 
         {/* Modal */}
         {open && (
-          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+          <div className="fixed inset-0 bg-gray-200 flex items-center justify-center">
             <div className="bg-white p-6 rounded-lg shadow-xl w-80">
               <h2 className="text-xl font-bold mb-4 text-center">Start Poll</h2>
 
@@ -223,7 +321,7 @@ export default function Home() {
         )}
 
         {/* Poll Results Pie Chart */}
-        <PollResultsPie yesVotes={YES_VOTES} noVotes={NO_VOTES} />
+        <PollResultsPie yesVotes={yesVotes} noVotes={noVotes} />
       </div>
     </div>
   );
