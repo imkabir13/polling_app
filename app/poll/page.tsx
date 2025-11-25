@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ENFORCE_SINGLE_VOTE } from "@/lib/pollConfig";
 import { getOrCreateDeviceId, markDeviceHasVoted } from "@/lib/device";
@@ -16,7 +16,7 @@ function getDeviceType(): string {
   return "desktop";
 }
 
-export default function PollPage() {
+function PollContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -300,5 +300,19 @@ export default function PollPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PollPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-gray-100">
+          <p className="text-gray-600 text-sm">Loading poll...</p>
+        </div>
+      }
+    >
+      <PollContent />
+    </Suspense>
   );
 }
