@@ -1,4 +1,4 @@
-import { MongoClient, Db } from "mongodb";
+import { MongoClient, Db, ServerApiVersion } from "mongodb";
 
 const uri = process.env.MONGODB_URI;
 const dbName = process.env.MONGODB_DB;
@@ -15,6 +15,11 @@ if (!dbName) {
   );
 }
 
+console.log("MongoDB Configuration:");
+console.log("- URI exists:", !!uri);
+console.log("- DB Name:", dbName);
+console.log("- Environment:", process.env.NODE_ENV);
+
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
 
@@ -24,20 +29,46 @@ declare global {
   var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
+const options = {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  },
+  // SSL/TLS options
+  tls: true,
+  tlsAllowInvalidCertificates: false,
+  tlsAllowInvalidHostnames: false,
+};
+
 if (process.env.NODE_ENV === "development") {
   // In dev, use a global so hot reloads don't create new clients
   if (!global._mongoClientPromise) {
-    client = new MongoClient(uri);
+    client = new MongoClient(uri, options);
     global._mongoClientPromise = client.connect();
   }
   clientPromise = global._mongoClientPromise;
 } else {
   // In prod, it's safe to create a new client
-  client = new MongoClient(uri);
+  client = new MongoClient(uri, options);
   clientPromise = client.connect();
 }
 
 export async function getDb(): Promise<Db> {
-  const client = await clientPromise;
-  return client.db(dbName);
+  try {
+    console.log("Attempting to connect to MongoDB...");
+    const client = await clientPromise;
+    console.log("MongoDB client connected successfully");
+    const db = client.db(dbName);
+    console.log("Database selected:", dbName);
+    return db;
+  } catch (error: any) {
+    console.error("MongoDB connection error:", error);
+    console.error("Error details:", {
+      message: error.message,
+      code: error.code,
+      name: error.name,
+    });
+    throw error;
+  }
 }
