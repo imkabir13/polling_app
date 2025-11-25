@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import PollResultsPie from "@/components/PollResultsPie";
+import QuestionCard from "@/components/QuestionCard";
+import UserInfoModel from "@/components/UserInfoModel";
 import { ENFORCE_SINGLE_VOTE } from "@/lib/pollConfig";
 import { hasDeviceVoted } from "@/lib/device";
 import { trackEvent } from "@/lib/analyticsClient";
@@ -149,7 +151,7 @@ export default function Home() {
   useEffect(() => {
     if (!open) return;
 
-    setSecondsLeft(10);
+    setSecondsLeft(120);
 
     const interval = setInterval(() => {
       setSecondsLeft((prev) => {
@@ -214,113 +216,34 @@ export default function Home() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
       <div className="flex flex-col items-center gap-8">
-        {/* Main Poll Button */}
+        {/* Show the question card ABOVE everything */}
+        <div className="px-3 sm:px-4 md:px-8">
+          <QuestionCard />
+        </div>
+
+        {/* Only the Poll button remains here */}
         <button
           onClick={handleOpenPoll}
           className="px-8 py-4 text-2xl font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700"
         >
-          Poll
+          ভোটে অংশগ্রহণ করুন
         </button>
 
-        {ENFORCE_SINGLE_VOTE && alreadyVotedMessage && (
-          <div className="px-4 py-2 bg-yellow-100 text-yellow-800 text-sm rounded-lg shadow">
-            {alreadyVotedMessage}
-          </div>
-        )}
+        {/* 🔹 Home modal component */}
+        <UserInfoModel
+          open={open}
+          gender={gender}
+          age={age}
+          ageError={ageError}
+          secondsLeft={secondsLeft}
+          isStartDisabled={isStartDisabled}
+          onGenderChange={(g) => setGender(g)}
+          onAgeChange={handleAgeChange}
+          onClose={handleClose}
+          onStart={handleStartPoll}
+        />
 
-        {/* Modal */}
-        {open && (
-          <div className="fixed inset-0 bg-gray-200 flex items-center justify-center">
-            <div className="bg-white p-6 rounded-lg shadow-xl w-80">
-              <h2 className="text-xl font-bold mb-4 text-center">Start Poll</h2>
-
-              {/* Gender Selection */}
-              <div className="mb-4">
-                <p className="text-sm font-medium mb-2">
-                  Select Gender <span className="text-red-500">*</span>
-                </p>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setGender("male")}
-                    className={`flex-1 py-2 rounded-lg border text-sm font-semibold
-                      ${
-                        gender === "male"
-                          ? "bg-blue-600 text-white border-blue-600"
-                          : "bg-gray-200 text-gray-800 border-gray-300"
-                      }
-                    `}
-                  >
-                    Male
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setGender("female")}
-                    className={`flex-1 py-2 rounded-lg border text-sm font-semibold
-                      ${
-                        gender === "female"
-                          ? "bg-pink-600 text-white border-pink-600"
-                          : "bg-gray-200 text-gray-800 border-gray-300"
-                      }
-                    `}
-                  >
-                    Female
-                  </button>
-                </div>
-              </div>
-
-              {/* Age Input */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">
-                  Age <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={age}
-                  onChange={handleAgeChange}
-                  placeholder="Enter age (17–99)"
-                  className="w-full border rounded px-3 py-2 text-sm"
-                  inputMode="numeric"
-                />
-                {ageError && (
-                  <p className="mt-1 text-xs text-red-600">{ageError}</p>
-                )}
-              </div>
-
-              {/* Timer message */}
-              {secondsLeft > 0 && secondsLeft <= 5 && (
-                <p className="mt-1 text-xs text-red-600 text-right">
-                  Please complete within {secondsLeft} seconds.
-                </p>
-              )}
-
-              {/* Buttons */}
-              <div className="flex justify-end gap-2 mt-4">
-                <button
-                  onClick={handleClose}
-                  className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 text-sm"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={handleStartPoll}
-                  disabled={isStartDisabled}
-                  className={`px-4 py-2 rounded text-sm font-semibold 
-                    ${
-                      isStartDisabled
-                        ? "bg-blue-300 text-white cursor-not-allowed"
-                        : "bg-blue-600 text-white hover:bg-blue-700"
-                    }
-                  `}
-                >
-                  Start Poll
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Poll Results Pie Chart */}
+        {/* Election results */}
         <PollResultsPie yesVotes={yesVotes} noVotes={noVotes} />
       </div>
     </div>

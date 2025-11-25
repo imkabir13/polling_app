@@ -13,7 +13,7 @@ export default function PollPage() {
   const searchParams = useSearchParams();
 
   const [answer, setAnswer] = useState<Answer>(null);
-  const [secondsLeft, setSecondsLeft] = useState<number>(10);
+  const [secondsLeft, setSecondsLeft] = useState<number>(120);
   const [deviceId, setDeviceId] = useState<string | null>(null);
 
   const gender = searchParams.get("gender");
@@ -107,19 +107,39 @@ export default function PollPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
       <div className="bg-white w-96 rounded-xl shadow-xl p-6">
-        <h1 className="text-2xl font-bold text-center mb-4">Polling</h1>
+        <h1 className="text-2xl font-bold text-center mb-4">ভোট দিন</h1>
 
         {/* Description / Question box */}
         <div className="mb-4">
-          <p className="text-sm font-medium mb-1">Question</p>
+          <p className="text-sm font-medium mb-1">প্রশ্ন</p>
           <div className="border rounded-md px-3 py-2 text-sm bg-gray-50">
-            Do you support the new community project in your area?
+            <b>
+              আপনি কি জুলাই জাতীয় সনদ সংবিধান সংস্কার বাস্তবায়ন আদেশ ২০২৫ এবং
+              জুলাই জাতীয় সনদে লিপিবদ্ধ সংবিধান সংস্কার সম্পর্কিত নিম্নলিখিত
+              প্রস্তাবগুলির প্রতি আপনার সম্মতি জ্ঞাপন করছেন?
+            </b>
+            <br></br>
+            <br></br>
+            ক) নির্বাচনকালীন তত্ত্বাবধায়ক সরকার, নির্বাচন কমিশন ও অন্যান্য
+            সাংবিধানিক প্রতিষ্ঠান জুলাই সনদের বর্ণিত প্রক্রিয়ার আলোকে গঠন করা
+            হবে।<br></br>
+            <br></br>
+            (খ) আগামী সংসদ হবে দুই কক্ষ বিশিষ্ট। জাতীয় সংসদ নির্বাচনে দলগুলির
+            প্রাপ্ত ভোটের অনুপাতে ১০০ জন সদস্যবিশিষ্ট একটি উচ্চকক্ষ গঠিত হবে এবং
+            সংবিধান সংশোধন করতে হলে উচ্চকক্ষের সংখ্যাগরিষ্ঠ সদস্যের অনুমোদন
+            দরকার হবে।<br></br>
+            <br></br>
+            (গ) যে ৩০টি বিষয়ে জাতীয় জুলাই সনদে রাজনৈতিক দলগুলোর ঐক্যমত্য হয়েছে
+            সেগুলো বাস্তবায়নে আগামী নির্বাচনে বিজয়ী দলগুলো বাধ্য থাকবে।<br></br>
+            <br></br>
+            (ঘ) জুলাই সনদে বর্ণিত অন্যান্য সংস্কার রাজনৈতিক দলগুলির প্রতিশ্রুতি
+            অনুযায়ী বাস্তবায়ন হবে।’
           </div>
         </div>
 
         {/* Yes / No Toggle */}
         <div className="mb-6">
-          <p className="text-sm font-medium mb-2">Your Answer</p>
+          <p className="text-sm font-medium mb-2">আপনার উত্তর</p>
           <div className="flex gap-4">
             <button
               type="button"
@@ -132,7 +152,7 @@ export default function PollPage() {
                 }
               `}
             >
-              Yes
+              হ্যাঁ
             </button>
             <button
               type="button"
@@ -145,7 +165,7 @@ export default function PollPage() {
                 }
               `}
             >
-              No
+              না
             </button>
           </div>
         </div>
@@ -183,7 +203,7 @@ export default function PollPage() {
             }
           `}
         >
-          Submit
+          ভোট প্রদান করুন
         </button>
       </div>
     </div>

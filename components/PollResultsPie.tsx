@@ -30,7 +30,9 @@ export default function PollResultsPie({
 
   return (
     <div className="bg-white rounded-xl shadow-xl p-6 w-80">
-      <h2 className="text-lg font-bold mb-4 text-center">Poll Results</h2>
+      <h2 className="text-lg font-bold mb-4 text-center">
+        ফলাফল সঙ্গে সঙ্গে দেখা যাবে
+      </h2>
 
       {/* Pie chart circle */}
       <div className="flex justify-center mb-4">
@@ -41,20 +43,24 @@ export default function PollResultsPie({
       <div className="flex justify-between text-sm">
         <div className="flex items-center gap-2">
           <span className="inline-block w-3 h-3 rounded-full bg-green-600" />
-          <span>
-            Yes: {yesVotes} ({yesPercent}%)
-          </span>
+          <b>
+            <span>
+              হ্যাঁ: {yesVotes} ({yesPercent}%)
+            </span>
+          </b>
         </div>
         <div className="flex items-center gap-2">
           <span className="inline-block w-3 h-3 rounded-full bg-red-600" />
-          <span>
-            No: {noVotes} ({noPercent}%)
-          </span>
+          <b>
+            <span>
+              না: {noVotes} ({noPercent}%)
+            </span>
+          </b>
         </div>
       </div>
 
       <p className="mt-3 text-xs text-gray-500 text-right">
-        Total votes: {totalVotes}
+        মোট ভোট: {totalVotes}
       </p>
     </div>
   );
