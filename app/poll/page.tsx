@@ -8,6 +8,14 @@ import { trackEvent } from "@/lib/analyticsClient";
 
 type Answer = "yes" | "no" | null;
 
+function getDeviceType(): string {
+  if (typeof navigator === "undefined") return "unknown";
+  const ua = navigator.userAgent.toLowerCase();
+  if (/mobi|android|iphone|ipad|ipod/.test(ua)) return "mobile";
+  if (/tablet/.test(ua)) return "tablet";
+  return "desktop";
+}
+
 export default function PollPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -15,27 +23,37 @@ export default function PollPage() {
   const [answer, setAnswer] = useState<Answer>(null);
   const [secondsLeft, setSecondsLeft] = useState<number>(120);
   const [deviceId, setDeviceId] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const gender = searchParams.get("gender");
   const age = searchParams.get("age");
   const sessionId = searchParams.get("sessionId");
 
-  const [showSuccess, setShowSuccess] = useState(false);
-
-  // Get / create device id on mount
+  // device id
   useEffect(() => {
     const id = getOrCreateDeviceId();
     setDeviceId(id);
   }, []);
 
-  // If any required session data is missing, treat as invalid session
+  // guard invalid session
   useEffect(() => {
     if (!gender || !age || !sessionId) {
       router.replace("/");
     }
   }, [gender, age, sessionId, router]);
 
-  // 1) Handle countdown only
+  // log "poll_question_modal_opened" once we have essentials
+  useEffect(() => {
+    if (!gender || !age || !sessionId || !deviceId) return;
+
+    trackEvent("poll_question_modal_opened", {
+      deviceId,
+      sessionId,
+      context: { gender, age: Number(age) },
+    });
+  }, [deviceId, gender, age, sessionId]);
+
+  // countdown
   useEffect(() => {
     const interval = setInterval(() => {
       setSecondsLeft((prev) => {
@@ -50,17 +68,46 @@ export default function PollPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // 2) When countdown finishes, navigate home
+  // timeout → analytics + vote_not_submitted + back home
   useEffect(() => {
-    if (secondsLeft === 0) {
+    if (secondsLeft !== 0) return;
+    if (!gender || !age || !sessionId) {
       router.push("/");
+      return;
     }
-  }, [secondsLeft, router]);
+
+    const deviceType = getDeviceType();
+
+    trackEvent("poll_question_modal_timeout", {
+      deviceId,
+      sessionId,
+      context: {
+        gender,
+        age: Number(age),
+        deviceType,
+      },
+    });
+
+    trackEvent("vote_not_submitted", {
+      deviceId,
+      sessionId,
+      context: {
+        gender,
+        age: Number(age),
+        deviceType,
+        reason: "timeout",
+      },
+    });
+
+    router.push("/");
+  }, [secondsLeft, router, deviceId, gender, age, sessionId]);
 
   const handleSubmit = async () => {
     if (!answer || !gender || !age || !sessionId) return;
 
     try {
+      const deviceType = getDeviceType();
+
       const res = await fetch("/api/poll", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -77,7 +124,7 @@ export default function PollPage() {
         throw new Error("Failed to submit poll");
       }
 
-      // 🔹 Analytics: vote submitted
+      // vote submitted
       trackEvent("vote_submitted", {
         deviceId,
         sessionId,
@@ -85,6 +132,7 @@ export default function PollPage() {
           gender,
           age: Number(age),
           answer,
+          deviceType,
         },
       });
 
@@ -102,6 +150,38 @@ export default function PollPage() {
     }
   };
 
+  const handleCancel = () => {
+    if (!gender || !age || !sessionId) {
+      router.push("/");
+      return;
+    }
+
+    const deviceType = getDeviceType();
+
+    trackEvent("poll_question_modal_closed", {
+      deviceId,
+      sessionId,
+      context: {
+        gender,
+        age: Number(age),
+        deviceType,
+      },
+    });
+
+    trackEvent("vote_not_submitted", {
+      deviceId,
+      sessionId,
+      context: {
+        gender,
+        age: Number(age),
+        deviceType,
+        reason: "user_closed",
+      },
+    });
+
+    router.push("/");
+  };
+
   const isSubmitDisabled = !answer;
 
   return (
@@ -109,35 +189,38 @@ export default function PollPage() {
       <div className="bg-white w-96 rounded-xl shadow-xl p-6">
         <h1 className="text-2xl font-bold text-center mb-4">ভোট দিন</h1>
 
-        {/* Description / Question box */}
+        {/* Question text */}
         <div className="mb-4">
           <p className="text-sm font-medium mb-1">প্রশ্ন</p>
           <div className="border rounded-md px-3 py-2 text-sm bg-gray-50">
             <b>
-              আপনি কি জুলাই জাতীয় সনদ সংবিধান সংস্কার বাস্তবায়ন আদেশ ২০২৫ এবং
-              জুলাই জাতীয় সনদে লিপিবদ্ধ সংবিধান সংস্কার সম্পর্কিত নিম্নলিখিত
+              আপনি কি জুলাই জাতীয় সনদ সংবিধান সংস্কার বাস্তবায়ন আদেশ ২০২৫ এবং
+              জুলাই জাতীয় সনদে লিপিবদ্ধ সংবিধান সংস্কার সম্পর্কিত নিম্নলিখিত
               প্রস্তাবগুলির প্রতি আপনার সম্মতি জ্ঞাপন করছেন?
             </b>
-            <br></br>
-            <br></br>
-            ক) নির্বাচনকালীন তত্ত্বাবধায়ক সরকার, নির্বাচন কমিশন ও অন্যান্য
-            সাংবিধানিক প্রতিষ্ঠান জুলাই সনদের বর্ণিত প্রক্রিয়ার আলোকে গঠন করা
-            হবে।<br></br>
-            <br></br>
-            (খ) আগামী সংসদ হবে দুই কক্ষ বিশিষ্ট। জাতীয় সংসদ নির্বাচনে দলগুলির
+            <br />
+            <br />
+            ক) নির্বাচনকালীন তত্ত্বাবধায়ক সরকার, নির্বাচন কমিশন ও অন্যান্য
+            সাংবিধানিক প্রতিষ্ঠান জুলাই সনদের বর্ণিত প্রক্রিয়ার আলোকে গঠন করা
+            হবে।
+            <br />
+            <br />
+            (খ) আগামী সংসদ হবে দুই কক্ষ বিশিষ্ট। জাতীয় সংসদ নির্বাচনে দলগুলির
             প্রাপ্ত ভোটের অনুপাতে ১০০ জন সদস্যবিশিষ্ট একটি উচ্চকক্ষ গঠিত হবে এবং
             সংবিধান সংশোধন করতে হলে উচ্চকক্ষের সংখ্যাগরিষ্ঠ সদস্যের অনুমোদন
-            দরকার হবে।<br></br>
-            <br></br>
-            (গ) যে ৩০টি বিষয়ে জাতীয় জুলাই সনদে রাজনৈতিক দলগুলোর ঐক্যমত্য হয়েছে
-            সেগুলো বাস্তবায়নে আগামী নির্বাচনে বিজয়ী দলগুলো বাধ্য থাকবে।<br></br>
-            <br></br>
+            দরকার হবে।
+            <br />
+            <br />
+            (গ) যে ৩০টি বিষয়ে জাতীয় জুলাই সনদে রাজনৈতিক দলগুলোর ঐক্যমত্য
+            হয়েছে সেগুলো বাস্তবায়নে আগামী নির্বাচনে বিজয়ী দলগুলো বাধ্য থাকবে।
+            <br />
+            <br />
             (ঘ) জুলাই সনদে বর্ণিত অন্যান্য সংস্কার রাজনৈতিক দলগুলির প্রতিশ্রুতি
-            অনুযায়ী বাস্তবায়ন হবে।’
+            অনুযায়ী বাস্তবায়ন হবে।
           </div>
         </div>
 
-        {/* Yes / No Toggle */}
+        {/* Yes / No */}
         <div className="mb-6">
           <p className="text-sm font-medium mb-2">আপনার উত্তর</p>
           <div className="flex gap-4">
@@ -186,25 +269,35 @@ export default function PollPage() {
           </div>
         )}
 
-        {/* Submit Button */}
+        {/* Countdown message */}
         {secondsLeft <= 5 && secondsLeft > 0 && (
           <p className="mb-2 text-xs text-red-600 text-right">
             Please submit within {secondsLeft} seconds.
           </p>
         )}
-        <button
-          onClick={handleSubmit}
-          disabled={isSubmitDisabled}
-          className={`w-full py-3 rounded-lg text-base font-semibold
-            ${
-              isSubmitDisabled
-                ? "bg-blue-300 text-white cursor-not-allowed"
-                : "bg-blue-600 text-white hover:bg-blue-700"
-            }
-          `}
-        >
-          ভোট প্রদান করুন
-        </button>
+
+        {/* Submit + Cancel buttons */}
+        <div className="flex gap-2">
+          <button
+            onClick={handleCancel}
+            className="w-1/3 py-3 rounded-lg text-base font-semibold bg-gray-200 text-gray-800 hover:bg-gray-300"
+          >
+            ফিরে যান
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitDisabled}
+            className={`w-2/3 py-3 rounded-lg text-base font-semibold
+              ${
+                isSubmitDisabled
+                  ? "bg-blue-300 text-white cursor-not-allowed"
+                  : "bg-blue-600 text-white hover:bg-blue-700"
+              }
+            `}
+          >
+            ভোট প্রদান করুন
+          </button>
+        </div>
       </div>
     </div>
   );

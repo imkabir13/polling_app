@@ -12,10 +12,6 @@ import { DEVICE_ID_KEY, HAS_VOTED_KEY } from "./constants";
 
 type Gender = "male" | "female" | null;
 
-// Mock result data – later this will come from API/DB
-// const YES_VOTES = 80000000;
-// const NO_VOTES = 9000000;
-
 export default function Home() {
   const [open, setOpen] = useState(false);
   const [gender, setGender] = useState<Gender>(null);
@@ -60,8 +56,8 @@ export default function Home() {
   };
 
   const handleClose = () => {
-    // 🔹 Analytics: modal closed manually
-    trackEvent("modal_closed", {
+    // user manually closed FIRST modal
+    trackEvent("user_info_modal_closed", {
       deviceId,
       context: { gender, age },
     });
@@ -81,13 +77,7 @@ export default function Home() {
       sessionId,
     });
 
-    // 🔹 Analytics: user started the poll
-    // trackEvent("modal_closed", {
-    //   deviceId,
-    //   sessionId,
-    //   context: { gender, age, action: "start_poll" },
-    // });
-
+    // moving to question step – second screen will log its own events
     resetForm();
     setOpen(false);
     setSecondsLeft(0);
@@ -95,7 +85,7 @@ export default function Home() {
     router.push(`/poll?${params.toString()}`);
   };
 
-  // deviceId and track poll_opened
+  // deviceId + "poll_opened"
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -109,19 +99,19 @@ export default function Home() {
     const votedFlag = localStorage.getItem(HAS_VOTED_KEY) === "true";
     setHasVoted(votedFlag);
 
-    // 🔹 Analytics: home / poll seen
     trackEvent("poll_opened", {
       deviceId: storedDeviceId,
       context: { screen: "home" },
     });
   }, []);
 
-  // Read hasVoted from localStorage via helper
+  // respect global "one vote per device" flag
   useEffect(() => {
     if (!ENFORCE_SINGLE_VOTE) return;
     setHasVoted(hasDeviceVoted());
   }, []);
 
+  // live stats for pie chart
   useEffect(() => {
     async function fetchStats() {
       try {
@@ -138,16 +128,7 @@ export default function Home() {
     fetchStats();
   }, []);
 
-  useEffect(() => {
-    if (open) {
-      trackEvent("modal_opened", {
-        deviceId,
-        context: { gender, age, action: "start_poll" },
-      });
-    }
-  }, [open]);
-
-  // Start countdown when modal opens
+  // countdown + timeout for FIRST modal
   useEffect(() => {
     if (!open) return;
 
@@ -158,8 +139,8 @@ export default function Home() {
         if (prev <= 1) {
           clearInterval(interval);
 
-          // 🔹 Analytics: modal timeout
-          trackEvent("modal_timeout", {
+          // user info modal timed out
+          trackEvent("user_info_modal_timeout", {
             deviceId,
             context: { gender, age },
           });
@@ -173,29 +154,7 @@ export default function Home() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [open]);
-
-  // When you read / create deviceId, also set state + fire poll_opened
-  useEffect(() => {
-    if (!ENFORCE_SINGLE_VOTE) return;
-    if (typeof window === "undefined") return;
-
-    let storedDeviceId = localStorage.getItem(DEVICE_ID_KEY);
-    if (!storedDeviceId) {
-      storedDeviceId = crypto.randomUUID();
-      localStorage.setItem(DEVICE_ID_KEY, storedDeviceId);
-    }
-    setDeviceId(storedDeviceId);
-
-    const votedFlag = localStorage.getItem(HAS_VOTED_KEY) === "true";
-    setHasVoted(votedFlag);
-
-    // 🔹 Analytics: user saw the home page/poll
-    trackEvent("poll_opened", {
-      deviceId: storedDeviceId,
-      context: { screen: "home" },
-    });
-  }, []);
+  }, [open, deviceId, gender, age]);
 
   const handleOpenPoll = () => {
     if (ENFORCE_SINGLE_VOTE && hasVoted) {
@@ -205,23 +164,24 @@ export default function Home() {
       return;
     }
     setAlreadyVotedMessage("");
-    // 🔹 Analytics: modal opened
-    trackEvent("modal_opened", {
+
+    trackEvent("user_info_modal_opened", {
       deviceId,
       context: { screen: "home" },
     });
+
     setOpen(true);
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
       <div className="flex flex-col items-center gap-8">
-        {/* Show the question card ABOVE everything */}
-        <div className="px-3 sm:px-4 md:px-8">
+        {/* Question card at top */}
+        <div className="px-3 sm:px-4 md:px-8 w-full max-w-4xl">
           <QuestionCard />
         </div>
 
-        {/* Only the Poll button remains here */}
+        {/* Main Call To Action */}
         <button
           onClick={handleOpenPoll}
           className="px-8 py-4 text-2xl font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700"
@@ -229,7 +189,13 @@ export default function Home() {
           ভোটে অংশগ্রহণ করুন
         </button>
 
-        {/* 🔹 Home modal component */}
+        {ENFORCE_SINGLE_VOTE && alreadyVotedMessage && (
+          <div className="px-4 py-2 bg-yellow-100 text-yellow-800 text-sm rounded-lg shadow">
+            {alreadyVotedMessage}
+          </div>
+        )}
+
+        {/* First-step modal (user info) */}
         <UserInfoModel
           open={open}
           gender={gender}
@@ -243,7 +209,7 @@ export default function Home() {
           onStart={handleStartPoll}
         />
 
-        {/* Election results */}
+        {/* Results pie chart */}
         <PollResultsPie yesVotes={yesVotes} noVotes={noVotes} />
       </div>
     </div>
