@@ -35,10 +35,6 @@ const options = {
     strict: true,
     deprecationErrors: true,
   },
-  // SSL/TLS options
-  tls: true,
-  tlsAllowInvalidCertificates: false,
-  tlsAllowInvalidHostnames: false,
 };
 
 if (process.env.NODE_ENV === "development") {
