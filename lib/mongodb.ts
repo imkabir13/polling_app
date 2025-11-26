@@ -35,6 +35,10 @@ const options = {
     strict: true,
     deprecationErrors: true,
   },
+  // For production serverless environments (Vercel, etc.)
+  ...(process.env.NODE_ENV === "production" && {
+    tlsInsecure: true,
+  }),
 };
 
 if (process.env.NODE_ENV === "development") {
