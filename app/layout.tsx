@@ -1,8 +1,16 @@
 import "./globals.css";
+import type { Metadata, Viewport } from "next";
 
-export const metadata = {
-  title: "My App",
-  description: "A simple test app",
+export const metadata: Metadata = {
+  title: "Polling App - ভোটিং অ্যাপ",
+  description: "জুলাই জাতীয় সনদ সংবিধান সংস্কার ভোটিং",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1, // Prevent zoom on iOS
+  userScalable: false, // Prevent zoom
 };
 
 export default function RootLayout({

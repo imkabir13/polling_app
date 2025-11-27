@@ -35,10 +35,11 @@ const options = {
     strict: true,
     deprecationErrors: true,
   },
-  // For production serverless environments (Vercel, etc.)
-  ...(process.env.NODE_ENV === "production" && {
-    tlsInsecure: true,
-  }),
+  maxPoolSize: 10,
+  minPoolSize: 1,
+  socketTimeoutMS: 45000,
+  connectTimeoutMS: 10000,
+  serverSelectionTimeoutMS: 10000,
 };
 
 if (process.env.NODE_ENV === "development") {

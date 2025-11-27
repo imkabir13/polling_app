@@ -5,8 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ENFORCE_SINGLE_VOTE } from "@/lib/pollConfig";
 import { getOrCreateDeviceId, markDeviceHasVoted } from "@/lib/device";
 import { trackEvent } from "@/lib/analyticsClient";
+import Notification from "@/components/Notification";
 
 type Answer = "yes" | "no" | null;
+type NotificationType = "success" | "error" | "warning" | "info";
 
 function getDeviceType(): string {
   if (typeof navigator === "undefined") return "unknown";
@@ -24,6 +26,10 @@ export default function PollPageContent() {
   const [secondsLeft, setSecondsLeft] = useState<number>(120);
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: NotificationType;
+  } | null>(null);
 
   const gender = searchParams.get("gender");
   const age = searchParams.get("age");
@@ -121,7 +127,9 @@ export default function PollPageContent() {
       });
 
       if (!res.ok) {
-        throw new Error("Failed to submit poll");
+        const errorData = await res.json();
+        const errorMessage = errorData.error || "Failed to submit poll";
+        throw new Error(errorMessage);
       }
 
       // vote submitted
@@ -144,9 +152,14 @@ export default function PollPageContent() {
       setTimeout(() => {
         router.push("/");
       }, 10000);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Something went wrong. Please try again.");
+      // Show the specific error message from server
+      const errorMessage = err.message || "Something went wrong. Please try again.";
+      setNotification({
+        message: errorMessage,
+        type: "error",
+      });
     }
   };
 
@@ -186,6 +199,16 @@ export default function PollPageContent() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
+      {/* Notification */}
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+          duration={5000}
+        />
+      )}
+
       <div className="bg-white w-96 rounded-xl shadow-xl p-6">
         <h1 className="text-2xl font-bold text-center mb-4">ভোট দিন</h1>
 
