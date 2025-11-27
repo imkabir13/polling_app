@@ -67,7 +67,7 @@ export default function Notification({
   const styles = getStyles();
 
   return (
-    <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4 animate-slide-down">
+    <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md px-4">
       <div
         className={`${styles.bg} ${styles.text} border-l-4 ${styles.border} p-4 rounded-lg shadow-lg flex items-start gap-3`}
         role="alert"

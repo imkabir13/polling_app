@@ -110,6 +110,14 @@ export default function PollPageContent() {
     return () => clearInterval(interval);
   }, []);
 
+  // Navigate to home page immediately when error occurs
+  useEffect(() => {
+    if (notification && notification.type === "error") {
+      // Navigate immediately, pass error message as query param
+      router.push(`/?error=${encodeURIComponent(notification.message)}`);
+    }
+  }, [notification, router]);
+
   // timeout → analytics + vote_not_submitted + back home
   useEffect(() => {
     if (secondsLeft !== 0) return;
@@ -177,7 +185,12 @@ export default function PollPageContent() {
       if (!res.ok) {
         const errorData = await res.json();
         const errorMessage = errorData.error || "Failed to submit poll";
-        throw new Error(errorMessage);
+        // Set error notification (will trigger navigation to home)
+        setNotification({
+          message: errorMessage,
+          type: "error",
+        });
+        return;
       }
 
       // vote submitted
@@ -202,10 +215,9 @@ export default function PollPageContent() {
       }, 10000);
     } catch (err: any) {
       console.error(err);
-      // Show the specific error message from server
-      const errorMessage = err.message || "Something went wrong. Please try again.";
+      // Handle unexpected errors (network errors, parsing errors, etc.)
       setNotification({
-        message: errorMessage,
+        message: "একটি ত্রুটি ঘটেছে। অনুগ্রহ করে পুনরায় চেষ্টা করুন।",
         type: "error",
       });
     } finally {

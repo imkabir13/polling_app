@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import PollResultsPie from "@/components/PollResultsPie";
 import QuestionCard from "@/components/QuestionCard";
 import UserInfoModel from "@/components/UserInfoModel";
+import Notification from "@/components/Notification";
 import { ENFORCE_SINGLE_VOTE, CLIENT_SIDE_DEVICE_CHECK } from "@/lib/pollConfig";
 import { hasDeviceVoted } from "@/lib/device";
 import { trackEvent } from "@/lib/analyticsClient";
@@ -12,7 +13,7 @@ import { DEVICE_ID_KEY, HAS_VOTED_KEY } from "./constants";
 
 type Gender = "male" | "female" | null;
 
-export default function Home() {
+function HomeContent() {
   const [open, setOpen] = useState(false);
   const [gender, setGender] = useState<Gender>(null);
   const [age, setAge] = useState<string>("");
@@ -23,8 +24,10 @@ export default function Home() {
   const [yesVotes, setYesVotes] = useState(0);
   const [noVotes, setNoVotes] = useState(0);
   const [deviceId, setDeviceId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const handleAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
@@ -86,6 +89,16 @@ export default function Home() {
 
     router.push(`/poll?${params.toString()}`);
   };
+
+  // Read error message from URL if user was redirected from poll page
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (error) {
+      setErrorMessage(decodeURIComponent(error));
+      // Clean up URL by removing the error parameter
+      router.replace("/");
+    }
+  }, [searchParams, router]);
 
   // deviceId + "poll_opened"
   useEffect(() => {
@@ -178,6 +191,16 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
+      {/* Error notification from poll page */}
+      {errorMessage && (
+        <Notification
+          message={errorMessage}
+          type="error"
+          onClose={() => setErrorMessage(null)}
+          duration={5000}
+        />
+      )}
+
       <div className="flex flex-col items-center gap-8">
         {/* Question card at top */}
         <div className="px-3 sm:px-4 md:px-8 w-full max-w-4xl">
@@ -216,5 +239,13 @@ export default function Home() {
         <PollResultsPie yesVotes={yesVotes} noVotes={noVotes} />
       </div>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <HomeContent />
+    </Suspense>
   );
 }
