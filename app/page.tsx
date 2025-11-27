@@ -186,9 +186,9 @@ export default function Home() {
         {/* Main Call To Action */}
         <button
           onClick={handleOpenPoll}
-          className="px-8 py-4 text-2xl font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700"
+          className="px-8 py-4 text-2xl font-semibold bg-green-600 text-white rounded-xl hover:bg-green-700"
         >
-          ভোটে অংশগ্রহণ করুন
+          আপনার মতামত দিন
         </button>
 
         {ENFORCE_SINGLE_VOTE && alreadyVotedMessage && (

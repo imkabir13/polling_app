@@ -3,7 +3,9 @@
 export default function QuestionCard() {
   return (
     <div className="max-w-xl bg-white rounded-xl shadow-md p-6 text-sm leading-relaxed">
-      <h2 className="text-xl font-bold text-center mb-4">ভোটের প্রশ্ন</h2>
+      <h2 className="text-xl font-bold text-center mb-4">
+        জনমত জরিপে আপনার মতামত দিন
+      </h2>
 
       <p className="font-semibold mb-3">
         আপনি কি জুলাই জাতীয় সনদ সংবিধান সংশোধন বাস্তবায়ন আইন ২০২৫ এবং জুলাই
@@ -36,6 +38,12 @@ export default function QuestionCard() {
           দলগুলোর প্রতিশ্রুতি অনুযায়ী বাস্তবায়ন করা হবে।
         </p>
       </div>
+
+      {/* Disclaimer */}
+      <p className="mt-4 text-xs text-red-600 italic text-center">
+        বিশেষ দ্রষ্টব্য: এই জনমত জরিপ বাংলাদেশ নির্বাচন কমিশন কর্তৃক ঘোষিত বা
+        পরিচালিত আনুষ্ঠানিক ভোট নয়।
+      </p>
     </div>
   );
 }
