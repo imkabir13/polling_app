@@ -8,7 +8,7 @@ const VoteSchema = z.object({
   sessionId: z.string().uuid(),
   deviceId: z.string().uuid().nullable().optional(),
   gender: z.enum(["male", "female"]),
-  age: z.number().int().min(17).max(120),
+  age: z.number().int().min(16).max(120),
   answer: z.enum(["yes", "no"]),
 });
 

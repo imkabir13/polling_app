@@ -29,7 +29,7 @@ export default function Home() {
   const handleAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
     const onlyDigits = raw.replace(/\D/g, "");
-    const trimmed = onlyDigits.slice(0, 2);
+    const trimmed = onlyDigits.slice(0, 3);
 
     setAge(trimmed);
 
@@ -39,15 +39,17 @@ export default function Home() {
     }
 
     const numericAge = Number(trimmed);
-    if (numericAge <= 16) {
+    if (numericAge < 16) {
       setAgeError("You are under 16.");
+    } else if (numericAge > 120) {
+      setAgeError("Please add valid age.");
     } else {
       setAgeError("");
     }
   };
 
   const isStartDisabled =
-    !gender || !age || Number(age) <= 16 || ageError !== "";
+    !gender || !age || Number(age) < 16 || Number(age) > 120 || ageError !== "";
 
   const resetForm = () => {
     setGender(null);

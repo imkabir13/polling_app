@@ -85,7 +85,7 @@ export default function UserInfoModel({
             type="text"
             value={age}
             onChange={onAgeChange}
-            placeholder="Enter age (17–99)"
+            placeholder="Enter your age"
             className="w-full border rounded px-3 py-2 text-base"
             inputMode="numeric"
             autoComplete="off"
