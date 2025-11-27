@@ -26,6 +26,8 @@ export default function PollPageContent() {
   const [secondsLeft, setSecondsLeft] = useState<number>(120);
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [voteToken, setVoteToken] = useState<string | null>(null);
   const [notification, setNotification] = useState<{
     message: string;
     type: NotificationType;
@@ -47,6 +49,40 @@ export default function PollPageContent() {
       router.replace("/");
     }
   }, [gender, age, sessionId, router]);
+
+  // Fetch vote token when page loads
+  useEffect(() => {
+    if (!gender || !age || !sessionId) return;
+
+    async function fetchVoteToken() {
+      try {
+        const res = await fetch("/api/vote-token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionId,
+            gender,
+            age,
+          }),
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to get vote token");
+        }
+
+        const data = await res.json();
+        setVoteToken(data.token);
+      } catch (error) {
+        console.error("Error fetching vote token:", error);
+        setNotification({
+          message: "একটি ত্রুটি ঘটেছে। অনুগ্রহ করে পুনরায় চেষ্টা করুন।",
+          type: "error",
+        });
+      }
+    }
+
+    fetchVoteToken();
+  }, [gender, age, sessionId]);
 
   // log "poll_question_modal_opened" once we have essentials
   useEffect(() => {
@@ -111,6 +147,17 @@ export default function PollPageContent() {
   const handleSubmit = async () => {
     if (!answer || !gender || !age || !sessionId) return;
 
+    // Check if vote token is ready
+    if (!voteToken) {
+      setNotification({
+        message: "অনুগ্রহ করে একটু অপেক্ষা করুন...",
+        type: "warning",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
     try {
       const deviceType = getDeviceType();
 
@@ -123,6 +170,7 @@ export default function PollPageContent() {
           age: Number(age),
           answer,
           deviceId,
+          voteToken, // Include signed JWT token
         }),
       });
 
@@ -160,6 +208,8 @@ export default function PollPageContent() {
         message: errorMessage,
         type: "error",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -195,7 +245,7 @@ export default function PollPageContent() {
     router.push("/");
   };
 
-  const isSubmitDisabled = !answer;
+  const isSubmitDisabled = !answer || isSubmitting;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
@@ -310,7 +360,7 @@ export default function PollPageContent() {
           <button
             onClick={handleSubmit}
             disabled={isSubmitDisabled}
-            className={`w-2/3 py-3 rounded-lg text-base font-semibold
+            className={`w-2/3 py-3 rounded-lg text-base font-semibold flex items-center justify-center gap-2
               ${
                 isSubmitDisabled
                   ? "bg-blue-300 text-white cursor-not-allowed"
@@ -318,7 +368,33 @@ export default function PollPageContent() {
               }
             `}
           >
-            ভোট প্রদান করুন
+            {isSubmitting ? (
+              <>
+                <svg
+                  className="animate-spin h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                জমা হচ্ছে...
+              </>
+            ) : (
+              "ভোট প্রদান করুন"
+            )}
           </button>
         </div>
       </div>

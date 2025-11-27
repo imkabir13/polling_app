@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import PollResultsPie from "@/components/PollResultsPie";
 import QuestionCard from "@/components/QuestionCard";
 import UserInfoModel from "@/components/UserInfoModel";
-import { ENFORCE_SINGLE_VOTE } from "@/lib/pollConfig";
+import { ENFORCE_SINGLE_VOTE, CLIENT_SIDE_DEVICE_CHECK } from "@/lib/pollConfig";
 import { hasDeviceVoted } from "@/lib/device";
 import { trackEvent } from "@/lib/analyticsClient";
 import { DEVICE_ID_KEY, HAS_VOTED_KEY } from "./constants";
@@ -107,9 +107,9 @@ export default function Home() {
     });
   }, []);
 
-  // respect global "one vote per device" flag
+  // respect global "one vote per device" flag (client-side check only if enabled)
   useEffect(() => {
-    if (!ENFORCE_SINGLE_VOTE) return;
+    if (!ENFORCE_SINGLE_VOTE || !CLIENT_SIDE_DEVICE_CHECK) return;
     setHasVoted(hasDeviceVoted());
   }, []);
 
@@ -159,9 +159,10 @@ export default function Home() {
   }, [open, deviceId, gender, age]);
 
   const handleOpenPoll = () => {
-    if (ENFORCE_SINGLE_VOTE && hasVoted) {
+    // Only check client-side if flag is enabled
+    if (ENFORCE_SINGLE_VOTE && CLIENT_SIDE_DEVICE_CHECK && hasVoted) {
       setAlreadyVotedMessage(
-        "You have already participated in this poll from this device."
+        "আপনি ইতিমধ্যে এই ডিভাইস থেকে ভোট দিয়েছেন।"
       );
       return;
     }
@@ -191,7 +192,7 @@ export default function Home() {
           আপনার মতামত দিন
         </button>
 
-        {ENFORCE_SINGLE_VOTE && alreadyVotedMessage && (
+        {ENFORCE_SINGLE_VOTE && CLIENT_SIDE_DEVICE_CHECK && alreadyVotedMessage && (
           <div className="px-4 py-2 bg-yellow-100 text-yellow-800 text-sm rounded-lg shadow">
             {alreadyVotedMessage}
           </div>
