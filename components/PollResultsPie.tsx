@@ -30,9 +30,7 @@ export default function PollResultsPie({
 
   return (
     <div className="bg-white rounded-xl shadow-xl p-6 w-80">
-      <h2 className="text-lg font-bold mb-4 text-center">
-        ফলাফল সঙ্গে সঙ্গে দেখা যাবে
-      </h2>
+      <h2 className="text-lg font-bold mb-4 text-center">ফলাফল</h2>
 
       {/* Pie chart circle */}
       <div className="flex justify-center mb-4">
