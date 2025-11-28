@@ -45,60 +45,91 @@ export function isActualMobileDevice(): boolean {
   if (typeof window === 'undefined') return false;
 
   let mobileScore = 0;
+  const debugInfo: any = {};
 
   // Check 1: User-Agent (weight: 2 points)
   const ua = navigator.userAgent.toLowerCase();
-  if (/android|webos|iphone|ipod|blackberry|iemobile|opera mini/i.test(ua)) {
+  const hasMobileUA = /android|webos|iphone|ipod|blackberry|iemobile|opera mini/i.test(ua);
+  if (hasMobileUA) {
     mobileScore += 2;
   }
+  debugInfo.userAgent = { value: ua, isMobile: hasMobileUA, points: hasMobileUA ? 2 : 0 };
 
   // Check 2: Touch points (weight: 2 points)
   // Real mobile devices have 5+ touch points, desktop with touch has 1-2
-  if (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) {
+  const touchPoints = navigator.maxTouchPoints || 0;
+  const hasTouchPoints = touchPoints > 2;
+  if (hasTouchPoints) {
     mobileScore += 2;
   }
+  debugInfo.touchPoints = { value: touchPoints, hasTouchPoints, points: hasTouchPoints ? 2 : 0 };
 
   // Check 3: Platform API (weight: 1 point)
   // @ts-ignore - userAgentData is experimental
-  if (navigator.userAgentData?.mobile === true) {
+  const platformMobile = navigator.userAgentData?.mobile === true;
+  if (platformMobile) {
     mobileScore += 1;
   }
+  debugInfo.platformAPI = { value: platformMobile, points: platformMobile ? 1 : 0 };
 
   // Check 4: Screen size (weight: 1 point)
   // Real mobile devices typically have smaller screens
   const screenWidth = window.screen.width;
   const screenHeight = window.screen.height;
   const smallerDimension = Math.min(screenWidth, screenHeight);
-  if (smallerDimension <= 768) {
+  const isSmallScreen = smallerDimension <= 768;
+  if (isSmallScreen) {
     mobileScore += 1;
   }
+  debugInfo.screenSize = { width: screenWidth, height: screenHeight, smallerDimension, isSmallScreen, points: isSmallScreen ? 1 : 0 };
 
   // Check 5: Device orientation API (weight: 1 point)
   // Mobile devices support orientation changes
-  if (typeof window.orientation !== 'undefined') {
+  const hasOrientation = typeof window.orientation !== 'undefined';
+  if (hasOrientation) {
     mobileScore += 1;
   }
+  debugInfo.orientation = { hasOrientation, points: hasOrientation ? 1 : 0 };
 
   // Check 6: Pointer type (weight: 1 point)
   // 'coarse' pointer = touch screen
-  if (window.matchMedia('(pointer: coarse)').matches) {
+  const hasCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
+  if (hasCoarsePointer) {
     mobileScore += 1;
   }
+  debugInfo.pointerType = { hasCoarsePointer, points: hasCoarsePointer ? 1 : 0 };
 
   // Exclude desktop browsers with dev tools mobile emulation
   // Desktop browsers in mobile mode won't have real platform indicators
   // @ts-ignore
   const platform = navigator.platform || navigator.userAgentData?.platform || '';
   const isDesktopPlatform = /Win|Mac|Linux/i.test(platform);
+  debugInfo.platform = { value: platform, isDesktopPlatform };
 
-  if (isDesktopPlatform && mobileScore < 4) {
-    // Desktop with mobile emulation - reject
+  // STRICT CHECK: If desktop platform detected, ALWAYS block regardless of score
+  // Real mobile devices will NEVER have Windows/Mac/Linux platform
+  if (isDesktopPlatform) {
+    console.log('🚫 MOBILE DETECTION - BLOCKED (Desktop platform detected):', {
+      ...debugInfo,
+      totalScore: mobileScore,
+      reason: 'Desktop platform: ' + platform,
+      result: 'BLOCKED'
+    });
     return false;
   }
 
   // Need at least 3 points to be considered a real mobile device
   // This ensures we're not fooled by browser emulation
-  return mobileScore >= 3;
+  const isAllowed = mobileScore >= 3;
+
+  console.log(isAllowed ? '✅ MOBILE DETECTION - ALLOWED' : '🚫 MOBILE DETECTION - BLOCKED', {
+    ...debugInfo,
+    totalScore: mobileScore,
+    threshold: 3,
+    result: isAllowed ? 'ALLOWED' : 'BLOCKED'
+  });
+
+  return isAllowed;
 }
 
 /**

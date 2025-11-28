@@ -47,7 +47,7 @@ export default function PollPageContent() {
   // Check if device is allowed (mobile-only mode)
   useEffect(() => {
     if (MOBILE_ONLY_VOTING && typeof window !== "undefined") {
-      const isAllowed = isDeviceAllowedToVote(navigator.userAgent, MOBILE_ONLY_VOTING);
+      const isAllowed = isDeviceAllowedToVote(undefined, MOBILE_ONLY_VOTING);
       if (!isAllowed) {
         router.replace("/mobile-only");
       }
