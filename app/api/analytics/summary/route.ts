@@ -1,8 +1,25 @@
 // app/api/analytics/summary/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/mongodb";
+import { validateApiKey, checkRateLimit } from "@/lib/apiAuth";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Validate API key
+  if (!validateApiKey(request)) {
+    return NextResponse.json(
+      { error: "Unauthorized - Invalid or missing API key" },
+      { status: 401 }
+    );
+  }
+
+  // Rate limiting by IP
+  const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+  if (!checkRateLimit(ip, 60, 60000)) {
+    return NextResponse.json(
+      { error: "Too many requests - Rate limit exceeded" },
+      { status: 429 }
+    );
+  }
   try {
     const db = await getDb();
 

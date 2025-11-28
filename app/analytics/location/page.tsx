@@ -21,7 +21,11 @@ export default function LocationAnalyticsPage() {
   useEffect(() => {
     async function fetchLocationData() {
       try {
-        const res = await fetch("/api/analytics/location");
+        const res = await fetch("/api/analytics/location", {
+          headers: {
+            "x-api-key": process.env.NEXT_PUBLIC_API_KEY || "",
+          },
+        });
         const result = await res.json();
         setData(result);
       } catch (err) {
@@ -68,7 +72,7 @@ export default function LocationAnalyticsPage() {
       {/* Navigation */}
       <div className="mb-6">
         <Link
-          href="/admin"
+          href="/analytics"
           className="text-blue-600 hover:text-blue-800 text-sm font-medium"
         >
           ← Back to Main Analytics
