@@ -15,6 +15,54 @@ export default function MobileOnlyPage() {
     }
   }, []);
 
+  const handleDownloadQR = () => {
+    const svg = document.getElementById("qr-code-svg");
+    if (!svg) return;
+
+    // Create a canvas element
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Set canvas size (QR code size + padding)
+    const size = 256;
+    const padding = 40;
+    canvas.width = size + padding * 2;
+    canvas.height = size + padding * 2;
+
+    // Fill white background
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Convert SVG to image
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+
+    const img = new Image();
+    img.onload = () => {
+      // Draw the QR code centered on canvas
+      ctx.drawImage(img, padding, padding, size, size);
+
+      // Convert canvas to PNG and download
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const downloadUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = downloadUrl;
+        link.download = "poll-qr-code.png";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(downloadUrl);
+      });
+
+      URL.revokeObjectURL(url);
+    };
+
+    img.src = url;
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-green-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl p-8 md:p-12 max-w-2xl w-full text-center">
@@ -53,6 +101,7 @@ export default function MobileOnlyPage() {
           <div className="mb-8">
             <div className="inline-block p-6 bg-white border-4 border-gray-200 rounded-xl shadow-md">
               <QRCodeSVG
+                id="qr-code-svg"
                 value={currentUrl}
                 size={256}
                 level="H"
@@ -60,6 +109,27 @@ export default function MobileOnlyPage() {
                 bgColor="#ffffff"
                 fgColor="#000000"
               />
+            </div>
+            <div className="mt-4">
+              <button
+                onClick={handleDownloadQR}
+                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-md transition-colors flex items-center gap-2 mx-auto"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                  />
+                </svg>
+                QR কোড ডাউনলোড করুন
+              </button>
             </div>
           </div>
         )}
