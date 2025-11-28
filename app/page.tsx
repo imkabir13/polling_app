@@ -6,10 +6,11 @@ import PollResultsPie from "@/components/PollResultsPie";
 import QuestionCard from "@/components/QuestionCard";
 import UserInfoModel from "@/components/UserInfoModel";
 import Notification from "@/components/Notification";
-import { ENFORCE_SINGLE_VOTE, CLIENT_SIDE_DEVICE_CHECK } from "@/lib/pollConfig";
+import { ENFORCE_SINGLE_VOTE, CLIENT_SIDE_DEVICE_CHECK, MOBILE_ONLY_VOTING } from "@/lib/pollConfig";
 import { hasDeviceVoted } from "@/lib/device";
 import { trackEvent } from "@/lib/analyticsClient";
 import { DEVICE_ID_KEY, HAS_VOTED_KEY } from "./constants";
+import { isDeviceAllowedToVote } from "@/lib/deviceDetection";
 
 type Gender = "male" | "female" | null;
 
@@ -89,6 +90,16 @@ function HomeContent() {
 
     router.push(`/poll?${params.toString()}`);
   };
+
+  // Check if device is allowed (mobile-only mode)
+  useEffect(() => {
+    if (MOBILE_ONLY_VOTING && typeof window !== "undefined") {
+      const isAllowed = isDeviceAllowedToVote(navigator.userAgent, MOBILE_ONLY_VOTING);
+      if (!isAllowed) {
+        router.push("/mobile-only");
+      }
+    }
+  }, [router]);
 
   // Read error message from URL if user was redirected from poll page
   useEffect(() => {

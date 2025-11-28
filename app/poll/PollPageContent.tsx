@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ENFORCE_SINGLE_VOTE } from "@/lib/pollConfig";
+import { ENFORCE_SINGLE_VOTE, MOBILE_ONLY_VOTING } from "@/lib/pollConfig";
 import { getOrCreateDeviceId, markDeviceHasVoted } from "@/lib/device";
 import { trackEvent } from "@/lib/analyticsClient";
 import Notification from "@/components/Notification";
+import { isDeviceAllowedToVote } from "@/lib/deviceDetection";
 
 type Answer = "yes" | "no" | null;
 type NotificationType = "success" | "error" | "warning" | "info";
@@ -42,6 +43,16 @@ export default function PollPageContent() {
     const id = getOrCreateDeviceId();
     setDeviceId(id);
   }, []);
+
+  // Check if device is allowed (mobile-only mode)
+  useEffect(() => {
+    if (MOBILE_ONLY_VOTING && typeof window !== "undefined") {
+      const isAllowed = isDeviceAllowedToVote(navigator.userAgent, MOBILE_ONLY_VOTING);
+      if (!isAllowed) {
+        router.replace("/mobile-only");
+      }
+    }
+  }, [router]);
 
   // guard invalid session
   useEffect(() => {
