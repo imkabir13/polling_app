@@ -19,7 +19,21 @@ export default function MobileOnlyPage() {
     const svg = document.getElementById("qr-code-svg");
     if (!svg) return;
 
-    // Create a canvas element
+    // Convert SVG to string
+    const svgData = new XMLSerializer().serializeToString(svg);
+
+    // Download SVG file
+    const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+    const svgUrl = URL.createObjectURL(svgBlob);
+    const svgLink = document.createElement("a");
+    svgLink.href = svgUrl;
+    svgLink.download = "poll-qr-code.svg";
+    document.body.appendChild(svgLink);
+    svgLink.click();
+    document.body.removeChild(svgLink);
+    URL.revokeObjectURL(svgUrl);
+
+    // Create a canvas element for PNG
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -34,10 +48,9 @@ export default function MobileOnlyPage() {
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Convert SVG to image
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(svgBlob);
+    // Convert SVG to image for PNG download
+    const svgBlob2 = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob2);
 
     const img = new Image();
     img.onload = () => {
@@ -55,7 +68,7 @@ export default function MobileOnlyPage() {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(downloadUrl);
-      });
+      }, "image/png");
 
       URL.revokeObjectURL(url);
     };
