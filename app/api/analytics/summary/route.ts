@@ -10,7 +10,8 @@ export async function GET() {
     const pollResponses = db.collection("pollResponses");
 
     // -------- Vote counts --------
-    const voteSubmittedCount = await analytics.countDocuments({ type: "vote_submitted" });
+    // Use pollResponses as source of truth for actual submitted votes
+    const voteSubmittedCount = await pollResponses.countDocuments();
     const voteNotSubmittedCount = await analytics.countDocuments({ type: "vote_not_submitted" });
 
     const funnel = {
