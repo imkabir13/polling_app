@@ -9,56 +9,22 @@ export async function GET() {
     const analytics = db.collection("analyticsEvents");
     const pollResponses = db.collection("pollResponses");
 
-    // -------- Funnel counts by type --------
-    const funnelAgg = await analytics
-      .aggregate([{ $group: { _id: "$type", count: { $sum: 1 } } }])
-      .toArray();
+    // -------- Vote counts --------
+    const voteSubmittedCount = await analytics.countDocuments({ type: "vote_submitted" });
+    const voteNotSubmittedCount = await analytics.countDocuments({ type: "vote_not_submitted" });
 
     const funnel = {
-      pollOpened: 0,
-      userInfoModalOpened: 0,
-      userInfoModalClosed: 0,
-      userInfoModalTimeout: 0,
-      pollQuestionModalOpened: 0,
-      pollQuestionModalClosed: 0,
-      pollQuestionModalTimeout: 0,
-      voteSubmitted: 0,
-      voteNotSubmitted: 0,
+      voteSubmitted: voteSubmittedCount,
+      voteNotSubmitted: voteNotSubmittedCount,
     };
 
-    for (const row of funnelAgg) {
-      switch (row._id) {
-        case "poll_opened":
-          funnel.pollOpened = row.count;
-          break;
-        case "user_info_modal_opened":
-          funnel.userInfoModalOpened = row.count;
-          break;
-        case "user_info_modal_closed":
-          funnel.userInfoModalClosed = row.count;
-          break;
-        case "user_info_modal_timeout":
-          funnel.userInfoModalTimeout = row.count;
-          break;
-        case "poll_question_modal_opened":
-          funnel.pollQuestionModalOpened = row.count;
-          break;
-        case "poll_question_modal_closed":
-          funnel.pollQuestionModalClosed = row.count;
-          break;
-        case "poll_question_modal_timeout":
-          funnel.pollQuestionModalTimeout = row.count;
-          break;
-        case "vote_submitted":
-          funnel.voteSubmitted = row.count;
-          break;
-        case "vote_not_submitted":
-          funnel.voteNotSubmitted = row.count;
-          break;
-        default:
-          break;
-      }
-    }
+    // -------- Vote Not Submitted by Gender --------
+    const voteNotSubmittedByGender = await analytics
+      .aggregate([
+        { $match: { type: "vote_not_submitted" } },
+        { $group: { _id: "$context.gender", count: { $sum: 1 } } },
+      ])
+      .toArray();
 
     // -------- Votes by answer / gender / total --------
     const totalVotes = await pollResponses.countDocuments();
@@ -71,11 +37,57 @@ export async function GET() {
       .aggregate([{ $group: { _id: "$gender", count: { $sum: 1 } } }])
       .toArray();
 
+    // -------- Age and Gender breakdown for YES and NO votes --------
+    const ageRanges = [
+      { range: "16-30", min: 16, max: 30 },
+      { range: "31-50", min: 31, max: 50 },
+      { range: "51-70", min: 51, max: 70 },
+      { range: "71-90", min: 71, max: 90 },
+      { range: "91-120", min: 91, max: 120 },
+    ];
+
+    // YES votes by age and gender
+    const yesVotesByAgeAndGender = await Promise.all(
+      ageRanges.map(async ({ range, min, max }) => {
+        const maleCount = await pollResponses.countDocuments({
+          answer: "yes",
+          gender: "male",
+          age: { $gte: min, $lte: max },
+        });
+        const femaleCount = await pollResponses.countDocuments({
+          answer: "yes",
+          gender: "female",
+          age: { $gte: min, $lte: max },
+        });
+        return { range, male: maleCount, female: femaleCount };
+      })
+    );
+
+    // NO votes by age and gender
+    const noVotesByAgeAndGender = await Promise.all(
+      ageRanges.map(async ({ range, min, max }) => {
+        const maleCount = await pollResponses.countDocuments({
+          answer: "no",
+          gender: "male",
+          age: { $gte: min, $lte: max },
+        });
+        const femaleCount = await pollResponses.countDocuments({
+          answer: "no",
+          gender: "female",
+          age: { $gte: min, $lte: max },
+        });
+        return { range, male: maleCount, female: femaleCount };
+      })
+    );
+
     return NextResponse.json({
       funnel,
+      voteNotSubmittedByGender,
       totalVotes,
       votesByAnswer,
       votesByGender,
+      yesVotesByAgeAndGender,
+      noVotesByAgeAndGender,
     });
   } catch (err: any) {
     console.error("Error fetching analytics summary:", err);

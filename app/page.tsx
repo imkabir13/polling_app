@@ -8,7 +8,6 @@ import UserInfoModel from "@/components/UserInfoModel";
 import Notification from "@/components/Notification";
 import { ENFORCE_SINGLE_VOTE, CLIENT_SIDE_DEVICE_CHECK, MOBILE_ONLY_VOTING } from "@/lib/pollConfig";
 import { hasDeviceVoted } from "@/lib/device";
-import { trackEvent } from "@/lib/analyticsClient";
 import { DEVICE_ID_KEY, HAS_VOTED_KEY } from "./constants";
 import { isDeviceAllowedToVote } from "@/lib/deviceDetection";
 
@@ -24,7 +23,6 @@ function HomeContent() {
   const [alreadyVotedMessage, setAlreadyVotedMessage] = useState("");
   const [yesVotes, setYesVotes] = useState(0);
   const [noVotes, setNoVotes] = useState(0);
-  const [deviceId, setDeviceId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const router = useRouter();
@@ -62,12 +60,6 @@ function HomeContent() {
   };
 
   const handleClose = () => {
-    // user manually closed FIRST modal
-    trackEvent("user_info_modal_closed", {
-      deviceId,
-      context: { gender, age },
-    });
-
     resetForm();
     setOpen(false);
   };
@@ -111,24 +103,19 @@ function HomeContent() {
     }
   }, [searchParams, router]);
 
-  // deviceId + "poll_opened"
+  // Initialize hasVoted flag
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    // Create device ID if it doesn't exist
     let storedDeviceId = localStorage.getItem(DEVICE_ID_KEY);
     if (!storedDeviceId) {
       storedDeviceId = crypto.randomUUID();
       localStorage.setItem(DEVICE_ID_KEY, storedDeviceId);
     }
-    setDeviceId(storedDeviceId);
 
     const votedFlag = localStorage.getItem(HAS_VOTED_KEY) === "true";
     setHasVoted(votedFlag);
-
-    trackEvent("poll_opened", {
-      deviceId: storedDeviceId,
-      context: { screen: "home" },
-    });
   }, []);
 
   // respect global "one vote per device" flag (client-side check only if enabled)
@@ -165,12 +152,6 @@ function HomeContent() {
         if (prev <= 1) {
           clearInterval(interval);
 
-          // user info modal timed out
-          trackEvent("user_info_modal_timeout", {
-            deviceId,
-            context: { gender, age },
-          });
-
           resetForm();
           setOpen(false);
           return 0;
@@ -180,7 +161,7 @@ function HomeContent() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [open, deviceId, gender, age]);
+  }, [open]);
 
   const handleOpenPoll = () => {
     // Only check client-side if flag is enabled
@@ -191,11 +172,6 @@ function HomeContent() {
       return;
     }
     setAlreadyVotedMessage("");
-
-    trackEvent("user_info_modal_opened", {
-      deviceId,
-      context: { screen: "home" },
-    });
 
     setOpen(true);
   };

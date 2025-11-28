@@ -36,10 +36,10 @@ export default function UserInfoModel({
   return (
     <div
       className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 overflow-y-auto"
-      style={{ touchAction: 'none' }} // Prevent scroll on background
+      style={{ touchAction: "none" }} // Prevent scroll on background
     >
       <div className="bg-white p-6 rounded-lg shadow-xl w-80 m-4 max-w-full">
-        <h2 className="text-xl font-bold mb-4 text-center">ভোট শুরু করুন</h2>
+        <h2 className="text-xl font-bold mb-4 text-center">আপনার তথ্য</h2>
 
         {/* Gender Selection */}
         <div className="mb-4">
@@ -85,11 +85,11 @@ export default function UserInfoModel({
             type="text"
             value={age}
             onChange={onAgeChange}
-            placeholder="Enter your age"
+            placeholder="আপনার বয়স এখানে লিখুন"
             className="w-full border rounded px-3 py-2 text-base"
             inputMode="numeric"
             autoComplete="off"
-            style={{ fontSize: '16px' }} // Prevent zoom on iOS
+            style={{ fontSize: "16px" }} // Prevent zoom on iOS
           />
           {ageError && <p className="mt-1 text-xs text-red-600">{ageError}</p>}
         </div>

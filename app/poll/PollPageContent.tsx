@@ -95,17 +95,6 @@ export default function PollPageContent() {
     fetchVoteToken();
   }, [gender, age, sessionId]);
 
-  // log "poll_question_modal_opened" once we have essentials
-  useEffect(() => {
-    if (!gender || !age || !sessionId || !deviceId) return;
-
-    trackEvent("poll_question_modal_opened", {
-      deviceId,
-      sessionId,
-      context: { gender, age: Number(age) },
-    });
-  }, [deviceId, gender, age, sessionId]);
-
   // countdown
   useEffect(() => {
     const interval = setInterval(() => {
@@ -129,7 +118,7 @@ export default function PollPageContent() {
     }
   }, [notification, router]);
 
-  // timeout → analytics + vote_not_submitted + back home
+  // timeout → vote_not_submitted + back home
   useEffect(() => {
     if (secondsLeft !== 0) return;
     if (!gender || !age || !sessionId) {
@@ -138,16 +127,6 @@ export default function PollPageContent() {
     }
 
     const deviceType = getDeviceType();
-
-    trackEvent("poll_question_modal_timeout", {
-      deviceId,
-      sessionId,
-      context: {
-        gender,
-        age: Number(age),
-        deviceType,
-      },
-    });
 
     trackEvent("vote_not_submitted", {
       deviceId,
@@ -244,16 +223,6 @@ export default function PollPageContent() {
 
     const deviceType = getDeviceType();
 
-    trackEvent("poll_question_modal_closed", {
-      deviceId,
-      sessionId,
-      context: {
-        gender,
-        age: Number(age),
-        deviceType,
-      },
-    });
-
     trackEvent("vote_not_submitted", {
       deviceId,
       sessionId,
@@ -283,7 +252,7 @@ export default function PollPageContent() {
       )}
 
       <div className="bg-white w-96 rounded-xl shadow-xl p-6">
-        <h1 className="text-2xl font-bold text-center mb-4">ভোট দিন</h1>
+        <h1 className="text-2xl font-bold text-center mb-4">আপনার মতামত দিন</h1>
 
         {/* Question text */}
         <div className="mb-4">
@@ -350,9 +319,9 @@ export default function PollPageContent() {
         </div>
 
         {showSuccess && (
-          <div className="fixed inset-0 bg-[#049354] flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-[#327a02] flex items-center justify-center z-50">
             <div className="bg-white rounded-xl shadow-xl p-6 w-80 text-center">
-              <h2 className="text-xl font-bold mb-3">Thank You!</h2>
+              <h2 className="text-xl font-bold mb-3">আপনাকে ধন্যবাদ!</h2>
               <p className="text-sm mb-4">Your vote has been recorded.</p>
 
               <button
@@ -416,7 +385,7 @@ export default function PollPageContent() {
                 জমা হচ্ছে...
               </>
             ) : (
-              "ভোট প্রদান করুন"
+              "মতামত জমা দিন"
             )}
           </button>
         </div>
