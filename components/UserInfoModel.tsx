@@ -38,7 +38,28 @@ export default function UserInfoModel({
       className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 overflow-y-auto"
       style={{ touchAction: "none" }} // Prevent scroll on background
     >
-      <div className="bg-white p-6 rounded-lg shadow-xl w-80 m-4 max-w-full">
+      <div className="bg-white p-6 rounded-lg shadow-xl w-80 m-4 max-w-full relative">
+        {/* Close Icon */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 transition-colors"
+          aria-label="Close"
+        >
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+
         <h2 className="text-xl font-bold mb-4 text-center">আপনার তথ্য</h2>
 
         {/* Gender Selection */}
@@ -101,18 +122,12 @@ export default function UserInfoModel({
           </p>
         )}
 
-        {/* Buttons */}
-        <div className="flex justify-end gap-2 mt-4">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 text-sm"
-          >
-            বন্ধ করুন
-          </button>
+        {/* Button */}
+        <div className="flex justify-center mt-4">
           <button
             onClick={onStart}
             disabled={isStartDisabled}
-            className={`px-4 py-2 rounded text-sm font-semibold 
+            className={`w-full px-4 py-2 rounded text-sm font-semibold
               ${
                 isStartDisabled
                   ? "bg-blue-300 text-white cursor-not-allowed"

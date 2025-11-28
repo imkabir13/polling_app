@@ -251,7 +251,28 @@ export default function PollPageContent() {
         />
       )}
 
-      <div className="bg-white w-96 rounded-xl shadow-xl p-6">
+      <div className="bg-white w-96 rounded-xl shadow-xl p-6 relative">
+        {/* Close Icon */}
+        <button
+          onClick={handleCancel}
+          className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 transition-colors"
+          aria-label="Close"
+        >
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+
         <h1 className="text-2xl font-bold text-center mb-4">আপনার মতামত দিন</h1>
 
         {/* Question text */}
@@ -341,18 +362,12 @@ export default function PollPageContent() {
           </p>
         )}
 
-        {/* Submit + Cancel buttons */}
-        <div className="flex gap-2">
-          <button
-            onClick={handleCancel}
-            className="w-1/3 py-3 rounded-lg text-base font-semibold bg-gray-200 text-gray-800 hover:bg-gray-300"
-          >
-            ফিরে যান
-          </button>
+        {/* Submit button */}
+        <div className="flex justify-center">
           <button
             onClick={handleSubmit}
             disabled={isSubmitDisabled}
-            className={`w-2/3 py-3 rounded-lg text-base font-semibold flex items-center justify-center gap-2
+            className={`w-full py-3 rounded-lg text-base font-semibold flex items-center justify-center gap-2
               ${
                 isSubmitDisabled
                   ? "bg-blue-300 text-white cursor-not-allowed"
